@@ -1,0 +1,46 @@
+version: 2
+
+jobs:
+  build:
+ 
+ 
+    working_directory: ~/realce-formulario
+    machine:
+      environment:
+        SPRING_PROFILES_ACTIVE: test
+      timezone:
+        America/Bogota
+      java:
+      
+        version: openjdk8
+      services:
+        - docker
+    general:
+      artifacts:
+        - "target/app.jar"
+ 
+    steps:
+      - checkout
+      - run: cp settings.xml ~/.m2/settings.xml
+      - run: git config --global user.email circleci@circleci
+      - run: git config --global user.name CircleCI
+
+      - restore_cache:
+          key: circleci-realce-formulario
+      - run: mvn clean install
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: circleci-realce-formulario
+ 
+      - deploy:
+          name: Deploy QA
+          command: |
+
+
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+                  chmod 755 deploy.sh && ./deploy.sh realce-manager qa digi "$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version|grep -Ev '(^\[|Download\w+:)')"
+            else
+                  echo "Not deployed into QA !!"
+            fi
+            
